@@ -1,0 +1,1 @@
+Repozytorium zawiera źródła wszystkich opracowań dostępnych na [studia.zawrotny.pl](http://studia.zawrotny.pl)
