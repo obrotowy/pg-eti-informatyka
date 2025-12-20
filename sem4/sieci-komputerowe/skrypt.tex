@@ -1,0 +1,853 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{polski}
+\usepackage[margin=2cm]{geometry}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{array}
+
+
+\setcounter{tocdepth}{2}
+\let\origfigure\figure
+\let\endorigfigure\endfigure
+\renewenvironment{figure}[1][2] {
+    \expandafter\origfigure\expandafter[H]
+} {
+    \endorigfigure
+}
+
+
+\title{Sieci Komputerowe}
+\author{Emilian Zawrotny\\ Na podstawie materiałów Prof. Krzysztofa Nowickiego, \\
+    dr. Krzysztofa Gierłowskiego}
+\date{\today}
+
+\begin{document}
+\maketitle
+\pagebreak
+\tableofcontents
+\pagebreak
+
+\section{Systemy Teleinformatyczne}
+    \subsection{Porównanie sieci WAN i LAN}
+        \begin{center}
+        \begin{tabular}{c@{\hspace{2cm}}c}
+        \begin{minipage}[t]{0.4\textwidth}
+            \begin{center}
+            Sieci lokalne \textbf{LAN}
+            \end{center}
+            \begin{itemize}
+                \item Niewielkie opóźnienia (mikrosekundy)
+                \item Znikoma stopa błędu
+                \item Większa przepustowość u użytkownika końcowego pomimo znacznie mniejszej ogólnej przepustowości sieci
+                \item Jeden zarządzający
+                \item Łatwe i tanie w implementacji
+            \end{itemize}
+        \end{minipage}
+    &
+        \begin{minipage}[t]{0.4\textwidth}
+            \begin{center}
+            Sieci rozległe \textbf{WAN}
+            \end{center}
+            \begin{itemize}
+                \item Znaczne opóźnienia (rzędu dziesiątek milisekund)
+                \item Znacząca stopa błędu
+                \item Większa zawodność, większa podatność na uszkodzenia łączy
+                \item Wielu zarządzających
+                \item Większa przepustowość całej sieci, jednak podzielona na większą ilość użytkowników
+                \item Duże koszty implementacji
+            \end{itemize}
+        \end{minipage}
+        \end{tabular}
+        \end{center}
+
+        \textbf{Problem:} Używamy tej samej architektury TCP/IP w obu rodzajach sieci - a co za tym idzie używamy mechanizmów WANowskich w sieciach lokalnych. Nasze routery na darmo liczą sumy kontrolne każdego pakietu, mimo iż ryzyko błędu jest niemalże zerowe, jest to marnotractwo mocy i wprowadzanie zbędnych opóźnień. \linebreak
+
+        Internet jest szczególną implementacji sieci WAN - opartą o architekturę TCP/IP, ze wstępnie zdefiniowanym zestawem protokołów i usług działających w architekturze klient-serwer.
+
+    \subsection{Klasyfikacja sieci ze względu na ich strukturę}
+        \begin{center}
+        \begin{tabular}{c@{\hspace{2cm}}c}
+        \begin{minipage}[t]{0.4\textwidth}
+            \begin{center}
+            Struktura hierarchiczna
+            \end{center}
+            \begin{itemize}
+                \item Zarządca widzący całą sieć, może ustalać globalnie routing na podstawie wiedzy o całej sieci - znaczący wpływ na wydajność
+                \item Single Point of Failure
+                \item Niemożliwe do zrealizowania w globalnej sieci przez względy polityczne
+                \item Słabo się skaluje z ilością węzłów
+            \end{itemize}
+        \end{minipage}
+    &
+        \begin{minipage}[t]{0.4\textwidth}
+            \begin{center}
+            Struktura rozproszona (\textbf{Używana w internecie})
+            \end{center}
+            \begin{itemize}
+                \item Każdy węzeł sam podejmuje decyzje o tym, jak odbywa się routing. Robi to przy mocno ograniczonej wiedzy nt. całej sieci
+                \item Łatwa skalowalność na dużą liczbę węzłów
+                \item Brak Single Point of Failure
+            \end{itemize}
+        \end{minipage}
+        \end{tabular}
+        \end{center}
+        
+    \subsection{Komutacja - sposób zestawiania fizycznych połączeń}
+        \subsubsection{Komutacja kanałów}
+        \begin{itemize}
+            \item Zestawianie połączenia przed rozpoczęciem transmisji danych - dodatkowe opóźnienie
+            \item Łącze fizyczne użytkowane na wyłączność
+            \item Wyłącznie opóźnienia propagacji - przydatne przy stałym natężeniu strumienia np. w transmisjach multimedialnych
+            \item Niezmieniona kolejność pakietów
+        \end{itemize}
+        \begin{figure}
+        \begin{center}
+        \includegraphics[width=0.4\textwidth]{assets/channel-comutation.png}
+        \end{center}
+        \end{figure}
+        \subsubsection{Komutacja pakietów w połączeniu wirtualnym}
+        Można wulgarnie porównać do protokołu TCP. Działa analogicznie jak komutacja kanałów, z tą różnicą że dane są podzielone na pakiety.
+        \subsubsection{Komutacja pakietów w sieci datagramowej / szybka komutacja pakietów}
+        Można wulgarnie porównać do protokołu UDP. W ten sposób de facto działa protokół IP i ew. protokół TCP w warstwie wyższej zajmuje się sprawdzaniem kolejności pakietów.
+        \begin{itemize}
+            \item Bezpołączeniowo - węzeł ufa, że inny węzeł jest dalej dostępny
+            \item Każdy pakiet jest trasowany indywidualnie
+            \item Kolejność otrzymywania pakietów jest niedeterministyczna
+            \item Szybka komutacja nie stosuje nawet sum kontrolnych - ryzyko marnowania łącza do dalszego przesyłu uszkodzonej ramki.
+        \end{itemize}
+        \begin{figure}
+            \begin{center}
+                \includegraphics[width=0.4\textwidth]{assets/datagram-comutation.png}
+            \end{center}
+        \end{figure}
+        \subsubsection{Współdzielenie medium przy komutacji kanałów}
+            \begin{itemize}
+                \item \textbf{FDM} (Frequency Division Multiplexing) - podział na pasma częstotliwości np. telewizja, radio, Wi-Fi (kilka sieci w jednym pomieszczeniu)
+                \item \textbf{TDM} (Time Division Multiplexing) - podział w czasie
+            \end{itemize}
+            \begin{figure}
+                \begin{center}
+                    \includegraphics[width=0.4\textwidth]{assets/TDM-FDM.png}
+                \end{center}
+                \caption{Wizualizacja obu podziałów}
+        \end{figure}
+        \subsubsection{Problem}
+            Obecnie większość ruchu internetowego to transmisje multimedialne - do których idealnie sprawdziłaby się komutacja kanałów, lecz internet wykorzystuje komutacje pakietów, co skutecznie obniża efektywność wykorzystania łącza.
+\pagebreak
+\section{Warstwowa architektura sieci}
+    \subsection{Jaki jest problem i po co jest?}
+        \begin{itemize}
+            \item Potrzeba kompatybilności różnorakiego sprzętu - np. Wi-Fi i Ethernet
+            \item Niezależny rozwój różnych obszarów - osobno rozwijane kwestie fizyczne, osobno aplikacje
+            \item Ogranicza złożoność sieci
+        \end{itemize}
+    \subsection{Enkapsulacja danych}
+        Dane są opakowywane w nagłówki kolejnych warstw stosu sieciowego.
+        \begin{figure}
+            \begin{center}
+                \includegraphics[width=0.4\textwidth]{assets/encapsulation.png}
+            \end{center}
+            \caption{Przykład enkapsulacji danych na przykładzie TCP/IP}
+        \subsubsection{Problem}
+            Nagłówki w sieci TCP/IP generują narzut łącznie 58 bajtów - to sprawia, że wysyłając jeden bajt, by otrzymać prędkość na poziomie 64kb/s potrzebujemy przepustowości łącza na poziomie 3.8 Mb/s. Efektywność łącza u automatyków jest wtedy znikoma - nawet 98\% wysyłanych bitów mogą stanowić nagłówki, a nie same wysyłane dane. Ktoś to musi zmienić.
+        \end{figure}
+    \subsection{Zasady współpracy warstw między sobą}
+        \begin{itemize}
+            \item Każda warstwa pełni funkcję warstwy transportowej dla warstwy powyższej.
+            \item O protokołach wykorzystywanych w danej warstwie mówi się potocznie \textit{Protokoły warstwy N-tej}
+        \end{itemize}
+    \subsection{Porównanie modelu ISO/OSI i TCP/IP}
+        \begin{figure}
+            \begin{center}
+                \includegraphics[width=0.4\textwidth]{assets/tcp-osi.png}
+            \end{center}
+        \end{figure}
+        \subsubsection{Główne różnice}
+        \begin{itemize}
+            \item \textbf{ISO/OSI} jest modelem abstrakcyjnym, służącym do projektowania faktycznych sieci. \textbf{TCP/IP} to z kolei konkretne rozwiązanie sieciowe,
+            \item Model \textbf{ISO/OSI} definiuje tylko tryb połączeniowy w warstwie transportowej, \textbf{TCP/IP} oferuje tryb połączeniowy (\textbf{TCP}) i bezpołączeniowy (\textbf{UDP}),
+            \item Liczba warstw,
+            \item Model \textbf{TCP/IP} definiuje wyłącznie tryb bezpołączeniowy w warstwie sieciowej, \textbf{ISO/OSI} nie.
+            \item Sposób ich realizacji,
+            \item Zasady nawiązywania połączeń między stacjami.
+        \end{itemize}
+        \subsubsection{Podobieństwa}
+        \begin{itemize}
+            \item Idea stosu protokołów
+            \item Górne warstwy opisują aplikacje
+            \item Dolne warstwy opisują komunikację
+        \end{itemize}
+    \subsection{Szczegółowe omówienie modelu ISO/OSI}
+    Pierwsze trzy warstwy odpowiadają za komunikację między stacjami, biorą więc udział również między węzłami pośrednimi. Warstwy 4-7 to warstwy aplikacyjne - te występują jedynie na stacjach końcowych.
+    \subsubsection{Warstwa fizyczna - np. skrętka, światłowód, eter, magistrala CAN}
+    \begin{itemize}
+        \item Odpowiada za przesył bitów między stacjami
+        \item Sygnały, kodowania, modulacje - to wszystko dzieje się w tej warstwie
+    \end{itemize}
+    \subsubsection{Warstwa łącza danych - np. Ethernet, FDDI, IEEE 802.11 (Wi-Fi)}
+    \begin{itemize}
+        \item Tworzenie ramek, zapewnianie ich przepływu
+        \item Zapewnienie niezawodności w zawodnynym medium transmisyjnym
+    \end{itemize}
+    \subsubsection{Warstwa sieciowa - np. IP, ICMP}
+    \begin{itemize}
+        \item Routing
+        \item Łaczenie sieci między sobą
+        \item Przeźroczysty przekaz danych - bez ingerencji w nie
+        \item Segmentacja i desegmentacja pakietów
+    \end{itemize}
+    \subsubsection{Warstwa transportowa - np. TCP, UDP}
+    \begin{itemize}
+        \item Zapewnenie niezawodnego przesyłu między węzłami końcowymi
+        \item Zapewnienie retransmisji utraconych pakietów
+    \end{itemize}
+    \subsubsection{Warstwa sesji - Gniazda sieciowe, SOCKS, RPC}
+    \begin{itemize}
+        \item Nawiązywanie połączeń
+        \item Dialog między procesam
+    \end{itemize}
+    \subsubsection{Warstwa prezentacji - np. MIME, TLS, SSL}
+    \begin{itemize}
+        \item Przekształcenie danych "ludzkich" na komputerowe.
+        \item Zapewnienie atrybutów bezpieczeństwa
+        \item Kompresja danych
+    \end{itemize}
+    \subsubsection{Warstwa aplikacji - np. HTTP, SMTP, SSH}
+    Warstwa świadczenia konkretnej usługi np. rozsyłanie poczty czy transmisja plików
+    \subsection{Architektura TCP/IP}
+    \subsubsection{Warstwa dostępu do sieci}
+    \begin{itemize}
+        \item Odpowiednik dwóch pierwszych warstw modelu ISO/OSI
+        \item W przypadku sieci LAN: Ethernet lub Wi-Fi
+        \item W przypadku sieci rozległych: PPP, SLIP, X.25, Frame Relay
+    \end{itemize}
+    \subsubsection{Warstwa międzysieciowa}
+    \begin{itemize}
+        \item W tej warstwie funkcjonuje protokół \textbf{IP}
+        \item Przenosi dane między warstwą transportową a dostępu do sieci w strukturach zwanych \textbf{datagramami}.
+    \end{itemize}
+    \subsubsection{Warstwa transportowa}
+    Protokoły TCP i UDP
+    \subsubsection{Warstwa aplikacji}
+    Protokoły HTTP, SMTP, SSH i wiele, wiele innych.
+\pagebreak
+\section{Charakterystyki metod dostępu do medium}
+\subsection{Metody zwielokrotniania dostępu do medium komunikacyjnego}
+\begin{itemize}
+    \item \textbf{FDM} (Frequency Division Multiplexing) - podział na pasma częstotliwościowe. Wykorzystywany w Wi-Fi w obrębie wielu sieci (tj. każda sieć ma swoje pasmo)
+    \item \textbf{TDM} (Time Division Multiplexing) - podział w czasie tj. każdy ma swój kwant czasu na nadawanie. Wykorzystywany w Wi-Fi w obrębie jednej sieci (tj. każdy węzeł w sieci ma swój czas na nadawanie)
+        \begin{itemize}
+            \item \textbf{STDM} - synchroniczny, bezkolizyjny, problemy z synchronizacją
+            \item \textbf{ATDM} - asynchroniczny, kontrolowany lub rywalizacyjny
+        \end{itemize}
+    \item \textbf{CDM} (Code Division Multiplexing) - zwielokrotniania kodowe, wydobywanie sygnału spośród dużego szumu np. w łączności satelitarnej
+    \item \textbf{WDM} (WaveLength Division Multiplexing) - podział na długość fali wykorzystywany w światłowodach 
+\end{itemize}
+\subsection{Algorytmy dostępu}
+\begin{tabular}{>{\raggedright\arraybackslash}p{4cm} | >{\raggedright\arraybackslash}p{4.5cm} | >{\raggedright\arraybackslash}p{4.5cm} | >{\raggedright\arraybackslash}p{4.5cm}}
+    \toprule
+    & \textbf{CSMA/CD} - Ethernet & \textbf{Tokenowe} - Token Ring/Token Bus & \textbf{CSMA/CA} - Wi-Fi \\
+    \midrule
+    Rozmiar ramki & 64B - 1500B & do 18kB & do 2312 B \\
+    \midrule
+    Kolizje & Klasyczny CSMA/CD tak, full-duplex nie & Nie & Tak (można odpytywać PCF, wówczas mamy okres czasu bezkolizyjny) \\
+    \midrule
+    Rodzaj algorytmu & rywalizacyjny & tokenowy & rywalizacyjny \\
+    \midrule
+    Opóźnienie w dostępie do medium & niedeterministyczne (zależne od obciążenia) & stałe & niedeterministyczne (zależne od obciążenia) \\
+    \midrule
+    Priorytety & Pierowtnie nie, wprowadzone w 802.1Q & Tak & Tak (zdefiniowane w 802.11e) \\
+    \midrule
+    Obsługa ruchu synchronicznego & Nie & Tak & Tak (okresowe wysyłanie Beaconów) \\
+    \midrule
+    Mechanizmy do różnicowania jakości obsługi aplikacji & klasyczna wersja nie, 802.1Q dokłada elementy QoS (priorytety) & Tak & Tak (802.11e) \\
+    \midrule
+    Inne & VLANy, sprawiedliwa obsługa stacji & rezerwacje tokena, Token bus ma skomplikowany przepływ tokena & DAC - distributed access control \\
+    \bottomrule
+\end{tabular}
+\subsection{Problem}
+    Zmienne opóźnienie znacząco utrudnia transmisję danych multimedialnych. Ktoś musi wymyśleć nowy algorytm - albo wskrzezić Token Busa by ten wyparł Ethernet.
+\pagebreak
+\section{Ethernet 10/100/1000Mbps}
+\textbf{Ethernet} to technologia warstwy dwóch pierwszych warstw modelu \textbf{ISO/OSI}. W tej sekcji omówimy standardy:
+\begin{itemize}
+    \item 10Mbps Ethernet 
+    \item 100Mbps Fast Ethernet
+    \item 1000Mbps Gigabit Ethernet
+\end{itemize}
+\subsection{Sposoby kodowania}
+\subsubsection{10Mbps Ethernet - kodowanie sygnału Manchester}
+\begin{itemize}
+    \item W środku bitu (zbocze opadające zegara) \textbf{ZAWSZE} następuje zmiana stanu,
+    \item Na początku bitu (zbocze narastające zegara) może nastąpić zmiania bitu, zależnie od nadawanych danych.
+    \item Zmiana napięcia przy zboczu opadającym (w środku bitu) symbolizuje bit:
+        \begin{itemize}
+            \item high $\rightarrow$ low: 0
+            \item low $\rightarrow$ high: 1
+        \end{itemize}
+        (W konwencji Ethernetowej IEEE 802.3, pierwotna konwencja Manchester zakładała odwrotnie)
+    \item Wymuszona zmiana stanu co cykl umożliwia łatwą synchronizację stacji, a także usuwa problem stałej składowej.
+\end{itemize}
+\begin{figure}
+    \begin{center}
+        \includegraphics[width=0.4\textwidth]{assets/manchester.png}
+    \end{center}
+    \caption{Kodowanie Manchester by Stefan Schmidt}
+\end{figure}
+\textbf{Problem: }Wymaga częstotliwości pasma będącej dwukrotnością zadanej przepustowości łącza. Pasmo 200MHz w skrętce dla 100Mbps Ethernetu było wówczas niemożliwe do realizacji.
+\subsubsection{Kodowanie danych $x$b/$y$b}
+Grupa $x$ bitów jest zamieniana na grupę $y > x$ bitów wymuszając odpowiednio częstą zmianę stanu.
+
+Po co?
+\begin{itemize}
+    \item Zapewnienie synchronizacji stacji
+    \item Wykrywanie awarii łącza (np. dla kodowania \textbf{4b/5b} wystąpienie 4 zer pod rząd oznacza awarię)
+    \item W technice światłowodowej zapobiega nadmiernemu przegrzewaniu (laser nie świeci nieustannie nawet podczas przesyłania samych jedynek)
+\end{itemize}
+\subsubsection{Fast Ethernet - kodowanie sygnału \textbf{MLT-3}}
+\begin{itemize}
+    \item Wykorzystuje kodowanie danych \textbf{4b/5b}
+    \item Trójpoziomowe
+    \item Zmiana poziomu na zboczu narastającym zegara oznacza bit=1
+\end{itemize}
+\begin{figure}
+    \begin{center}
+        \includegraphics[width=0.4\textwidth]{assets/mlt3.png}
+    \end{center}
+\end{figure}
+Potrzebna częstotlwiość pasma jest 4-krotnie mniejsza od zadanej przepustowości. Trzeba jednak brać pod uwagę narzut wynikający z kodowania danych \textbf{4b/5b} - by przesłać 100Mb danych, musimy rzeczywiście wysłać ich 125Mb.
+$$f = \frac{100Mb/s \cdot \frac{5}{4}}{4} = 31.25MHz$$
+\subsubsection{Gigabit Ethernet po skrętce (1000BASE-T) - kodowanie 4D-PAM5}
+\begin{itemize}
+    \item Wykorzystujemy 4 niezależne kanały po 5 poziomów każdy, działające w trybie Full-Duplex
+    \item Kodowanie danych \textbf{8B1Q4} wykorzystywane w tym standardzie nie było omawiane na wykładzie, wystarczy wiedzieć, że nie generuje dodatkowego narzutu 
+    \item Potrzebujemy 8-krotnie mniejszą częstotliwość względem przepustowości
+    $$f = \frac{1000Mb/s}{8} = 125MHz$$
+\end{itemize}
+\subsection{Ramka Ethernetowa}
+\begin{figure}
+    \begin{center}
+        \includegraphics[width=0.6\textwidth]{assets/ethernet-frame.png}
+    \end{center}
+    \caption{Ramka Ethernetowa}
+    \textbf{Uwaga:} W niektórych źródłach można znaleźć informację, że minimalny rozmiar danych to 42 bajty - wynosi on tyle, gdy korzystamy ze standardu 802.1Q który dorzuca nam dodatkowe, 4 bajtowe pole.
+\end{figure}
+Preambuła i pole startu służą do synchronizacji między stacjami, faktyczną ramkę w znaczeniu warstwy drugiej stanowią następne pola.
+\subsubsection{Skąd minimalna długość danych?}
+Podczas projektowania standardu Ethernet założono zasięg sieci $2500$ m. Ówczesne łącza koncentryczne wymuszały długość segmentu $500$ m. A algorytm \textbf{CSMA/CD} umożliwia wykrywanie kolizji wyłącznie wtedy, gdy węzeł sam jeszcze nadaje.
+\begin{center}
+\begin{tabular}{c@{\hspace{2cm}}c}
+\begin{minipage}[t]{0.35\textwidth}
+    $s = 500m \\
+    v = \frac{2}{3}c$ - założona prędkość rozchodzenia się sygnału w koncentryku
+    $$t_{\mbox{segment}} = \frac{s}{v} = \frac{500 m}{2\cdot10^8} = 2.5\mu s$$
+    $$t_{\mbox{w obie strony}} = 2 \cdot (5\cdot2.5\mu s + 4\cdot 2\mu s + 2\cdot 1.5 \mu s) = 51 \mu s$$
+\end{minipage}
+&
+\begin{minipage}[t]{0.5\textwidth}
+    \begin{figure}
+        \includegraphics[width=\textwidth]{assets/segments.png}
+    \end{figure}
+\end{minipage}
+\end{tabular}
+\end{center}
+Z tego wynika, że dwukrotność czasu propagacji musi wynosić $51 \mu s$. Zaokrąglono więc tą wartość do $51.2 \mu s$ i skonstruowano równanie:
+$$51.2 \cdot 10^{-6}s \cdot 10^{7} \frac{b}{s} = 512b = 64B$$
+i uznano je za świętość. Jako że nagłówki zajmują 18 bajtów, żeby cała ramka była niekrótsza niż 64 bajty, rozmiar danych trzeba ograniczyć z dołu do 46 bajtów.
+
+\textbf{Problem: }Wraz ze wzrostem przepustowości maleje zasięg sieci, choć zasięg w Fast Ethernet był jescze akceptowalny, tak dla Gigabitowego Ethernetu była potrzeba porzucenia \textbf{CSMA/CD} na rzecz \textbf{Full-Duplex} - mimo to świętość pozostała, na rzecz kompatybilności wstecznej.
+\subsubsection{Skąd maksymalna długość danych?}
+Założenia:
+\begin{itemize}
+    \item Możliwość wysłania strony tekstu w jednej ramce
+    \item Możliwość przechowania całej ramki w RAMie (w latach 70' to wcale nie było takie oczywiste)
+    \item Ograniczenie liczby retransmisji
+    \item BER ówczesnych koncentryków na poziomie $10^{-8}$
+\end{itemize}
+Przy tych założeniach uznano wartość 1500 bajtów za złoty środek pomiędzy ilością wysyłanych danych, a ilością błędów w transmisji.
+
+Obecnie skrętki oferują BER na poziomie $10^{-11}$, światłowody jeszcze niższy, więc ramki możnaby było wydłużyć, lecz usuwa to kompatybilność wsteczną.
+
+Istnieją też ramki "Jumbo", lecz te nie są ustandaryzowane i bywają problematyczne, gdy korzystamy ze sprzętów sieciowych różnych firm w obrębie jednej sieci.
+\pagebreak
+\section{Ethernet 10/40/100/400Gbps}
+\subsection{Ethernet 10Gbps}
+Założenia:
+\begin{itemize}
+    \item Osobne warstwy fizyczne dla sieci LAN i WAN
+    \item Pierwotnie tylko światłowód, później jednak powstał standard \textbf{10GBASE-T}
+\end{itemize}
+\subsubsection{Implementacje 10Gb/s Ethernetu}
+Światłowodowe: \textbf{10GBASE-\{S,L,E\}\{R, W\}}, \textbf{10GBASE-LX4}\\
+Miedziane: \textbf{10GBASE-T} (skrętka), \textbf{10GBASE-CX4} (koncentryk) \\
+Backplane (styki na PCB): \textbf{10GBASE-K\{X4, R\}}
+\begin{itemize}
+    \item \textbf{S, L, E} - długość fali 
+        \begin{itemize}
+            \item Short: 850 nm
+            \item Long: 1310 nm
+            \item Extra long: 1550 nm
+        \end{itemize}
+    \item \textbf{R} - LAN PHY, \textbf{W} - WAN PHY
+    \item \textbf{X} - transmisja równoległa (korzysta z kodowania \textbf{8b/10b})
+    \item 4 - 4 pary kabla
+    \item \textbf{BASE} - Baseband, TDM
+\end{itemize}
+\subsection{IEEE 802.3ba - 40Gbps i 100Gbps}
+\begin{itemize}
+    \item Pierowtnie 4 światłowody po 10Gb/s każdy (QSFP) lub 10 (CXP)
+    \item Później możliwość osiągnięcia 100Gb/s przy użyciu 4 światłowodów po 25Gbps każdy
+\end{itemize}
+\subsubsection{Implementacje 100 Gb/s Ethernet}
+\begin{center}
+\begin{tabular}{c@{\hspace{2cm}}c}
+\begin{minipage}[t]{0.35\textwidth}
+    \begin{center}
+        \textbf{100GBASE-SR10}
+        \begin{itemize}
+            \item 10 $\times$ 10Gb/s
+            \item Światłowód wielomodowy
+            \item Max. odległość: 100m
+        \end{itemize}
+    \end{center}
+\end{minipage}
+&
+\begin{minipage}[t]{0.5\textwidth}
+    \begin{center}
+        \textbf{100GBASE-\{L,E\}R4}
+        \begin{itemize}
+            \item 4 $\times$ 25Gb/S
+            \item Światłowód jednomodowy
+            \item Max. odleglość: 10km (L), 40km (E)
+        \end{itemize}
+    \end{center}
+\end{minipage}
+\end{tabular}
+\end{center}
+\pagebreak
+
+\section{IEEE 802.11 Wi-Fi}
+    \subsection{Tryby pracy Wi-Fi}
+    \begin{center}
+    \begin{tabular}{c@{\hspace{2cm}}c}
+    \begin{minipage}[t]{0.35\textwidth}
+        \begin{center}
+            \textbf{Ad-Hoc}
+            \begin{itemize}
+                \item IBSS (Independent Basic Service Set)
+                \item Urządzenia komunikują się ze sobą bezpośrednio
+                \item Obecnie już raczej niewykorzystywany
+            \end{itemize}
+        \end{center}
+    \end{minipage}
+    &
+    \begin{minipage}[t]{0.5\textwidth}
+        \begin{center}
+            \textbf{Infrastructure}
+            \begin{itemize}
+                \item BSS (Basic Service Set)
+                \item Sieć jest tworzona i koordynowana przez Access Point
+                \item Sieć jest identyfikowana przez BSSID (identyfikator AP)
+                \item Ruch odbywa się wyłącznie między \textbf{STA}cją a AP (ruch \textbf{STA}$\leftrightarrow$\textbf{STA} realizowany jest w sposób \textbf{STA}$\leftrightarrow$\textbf{AP}$\leftrightarrow$\textbf{STA})
+            \end{itemize}
+        \end{center}
+    \end{minipage}
+    \end{tabular}
+    \end{center}
+    \subsection{Distribution Center (DS)}
+        Jest to system łączący Access Pointy ze sobą. Umożliwia on komunikację między stacjami należącymi do dwóch różnych BSS.
+        Acces Point składa się z dwóch części:
+        \begin{itemize}
+            \item \textbf{STA} - z racji przynależności do \textbf{BSS},
+            \item \textbf{DS-related} - umożliwia działanie w obrębie \textbf{DS}
+        \end{itemize}
+    \subsection{Portal}
+        Umożliwia komunikację między DS a siecią zewnątrzną pracującą w innym standardzie. Taką siecią może być na przykład sieć Ethernetowa, do której podłączamy Access Pointa.
+    \subsection{Extended Service Set (ESS)}
+    Na chłopski rozum jest to "sieć WiFi". Bardziej formalnie - zbiór Access Pointów i stacji do nich podłączonych.
+    \subsubsection{Sposób identyfikacji sieci}
+    \begin{itemize}
+        \item \textbf{BSSID} - identyfikator konkretnego Access Pointa należącego do ESS
+        \item \textbf{ESSID} - "nazwa sieci", do 32 bajtów UTF-8
+    \end{itemize}
+    Sposób określenia \textbf{BSSID} na podstawie \textbf{ESSID} nie jest określony przez standard - najczęściej decyduje moc sygnału.
+    \begin{figure}
+        \begin{center}
+            \includegraphics[scale=2]{assets/ESS.png}
+        \end{center}
+        \caption{Wizualizacja sieci WiFi}
+    \end{figure}
+    \subsection{Sposoby wyszukiwania sieci Wi-Fi}
+    Stacja kliencka przeszukuje obsługiwane kanały częstotliwościowe
+    \begin{itemize}
+        \item \textbf{Przeszukiwanie pasywne} - stacja nasłuchuje ramek typu \textbf{Beacon}
+        \item \textbf{Przeszukiwanie aktywne} - stacja wysyła ramkę typu \textbf{Probe Request} i nasłuchuje odpowiedzi
+    \end{itemize}
+    \subsection{Ramka w IEEE 802.11}
+    \begin{center}
+        \includegraphics[width=0.8\textwidth]{assets/wifi-frame.png}
+    \end{center}
+    Wyróżniamy 3 typy ramek:
+    \begin{itemize}
+        \item Ramki danych
+        \item Ramki kontrolne: RTS, CTS, ACK, Block ACK
+        \item Ramki zarządzające: Beacon, Probe Request/Response, Auth/Deauth
+    \end{itemize}
+    \subsubsection{Po co nam aż 4 adresy???}
+    Ramki możemy sklasyfikować na podstawie odbiorcy i nadawcy na:
+    \begin{itemize}
+        \item STA $\rightarrow$ STA - używane wyłącznie w trybie Ad-Hoc
+        \item AP $\rightarrow$ STA
+        \item STA $\rightarrow$ AP
+        \item AP $\rightarrow$ AP
+    \end{itemize}
+    A przecież w praktyce możemy wysyłać dane ze STAcji do STAcji podłączonej do innego Access Pointa, w obrębie tego samego ESS.
+    Stąd wyróżniamy adresy:
+    \begin{itemize}
+        \item urządzenia które utworzyło ramkę (SA, Source Address)
+        \item adresata utworzonej ramki (DA, Destination Address)
+        \item nadającego ramkę (TA, Transmitter Address)
+        \item odbierającego ramkę (RA, Receiver Address)
+    \end{itemize}
+    \begin{center}
+    \begin{tabular}{|c|c|c|c|c|c|}
+    \hline
+    \textbf{To DS} & \textbf{From DS} & \textbf{Address 1} & \textbf{Address 2} & \textbf{Address 3} & \textbf{Address 4} \\
+    \hline
+    0 & 0 & RA = DA & TA = SA & IBSSID & - \\
+    0 & 1 & RA = DA & TA = BSSID & SA & - \\
+    1 & 0 & RA = BSSID & TA = SA & DA & - \\
+    1 & 1 & RA & TA & DA & SA \\
+    \hline
+    \end{tabular}
+    \end{center}
+    \begin{center}
+        \textit{Tu moze wstawie jakas wizualizacje tego xd}
+    \end{center}
+    \pagebreak
+    \subsection{Dostęp do medium}
+    \subsubsection{DCF}
+        Jest to rywalizacyjny algorytm (CSMA/CA)
+        \begin{enumerate}
+            \item Jeśli medium jest wolne, to po prostu nadajemy co chcemy nadać.
+            \item Jeśli zajęte, to generujemy losowe opóźnienie
+            \item Opóźnienie to następnie odliczamy tylko, gdy medium jest wolne przez co najmniej czas DIFS
+            \item Po odczekaniu rozpoczynamy transmisję
+        \end{enumerate}
+        \begin{center}
+            \includegraphics[width=0.6\textwidth]{assets/dcf.png}
+        \end{center}
+    \subsubsection{PCF}
+        Algorytm kontrolowany. Przydatny podczas dużego obciązenia sieci - np. jedna stacja pobiera Shreka. Wtedy AP przełącza się w tryb PCF na określony czas wysyłając ramkę Beacon.
+        \begin{enumerate}
+            \item Przełączenie w tryb PCF - Ramka Beacon aka. "teraz mówicie tylko jak was spytam, czy chcecie coś powiedzieć"
+            \item AP pyta kolejne stacje, czy chcą coś powiedzieć
+            \item Jeśli stacja ma coś do nadania, to nadaje, a AP potwierdza odbiór ramką ACK.
+            \item Powrót do trybu DCF.
+        \end{enumerate}
+        \begin{center}
+            \includegraphics[width=0.8\textwidth]{assets/pcf.png}
+        \end{center}
+    \pagebreak
+    \subsection{Zjawisko stacji ukrytych}
+    Sytuacja, w której stacje które wzajemnie siebie nie słyszą zakłócają się nawzajem.
+    \begin{figure}
+        \begin{center}
+            \includegraphics[width=0.5\textwidth]{assets/hidden-stations.png}
+            \caption{\textbf{A} nie słyszy \textbf{C}, ale zakłóca jego wiadomość skierowaną do \textbf{D}.}
+        \end{center}
+    \subsubsection{Rozwiązanie}
+    Ramki \textbf{RTS} (Request to Send) i \textbf{CTS} (Clear to Send).
+    Stacja nadająca najpierw nadaje ramkę \textbf{RTS}, a odbiorca odpowiada ramką \textbf{CTS}. W powyższym przykładzie stacja \textbf{A} nie będzie nadawać, bo po odebraniu ramki \textbf{CTS} wie, że ktoś w pobliżu nadaje, mimo że samej transmisji nie słyszy.
+    \end{figure}
+\pagebreak
+\section{Łączenie sieci}
+    Podstawowe problemy:
+    \begin{itemize}
+        \item Różne technologie (np. Ethernet, Wi-Fi, ATM, Token Ring)
+            \begin{itemize}
+                \item Do łączenia węzłów sieci WAN ze sobą wykorzystujemy praktycznie tylko Ethernet, więc problem odpada
+            \end{itemize}
+        \item Różne rozmiary ramek (Większą ramkę trzeba podzielić na mniejsze, by dopasować do innej technologii)
+            \begin{itemize}
+                \item Ramka w Wi-Fi może zawierać 2342 B danych, a Ramka Ethernetowa tylko 1500 B.
+            \end{itemize}
+        \item Różna Endianowość
+        \item Różne sposoby liczenia sum kontrolnych (trzeba przeliczać na nowo)
+        \item Priorytety (Niektóre standardy je mają, inne nie)
+    \end{itemize}
+    Potrzebujemy jakiegoś magicznego urządzenia, które rozwiąże te wszystkie problemy.
+    \subsubsection{Problemy przy przyłączaniu do sieci WAN}
+    \begin{itemize}
+        \item Trzeba zadbać o to, by ruch rozgłoszeniowy z sieci LAN nie wychodził do internetu
+        \item Przepustowość sieci WAN jest ograniczeniem. Sieć w domu ma gigabit na 5 urządzeń, a sieć WAN ma 400Gb na miliardy urządzeń. Przepustowość przypadająca na pojedyńczy węzeł jest znacznie mniejsza.
+        \item Routery w sieciach LAN ciężko nazwać faktycznie routerami. Ich zadanie ogranicza się do filtrowania ruchu rozgłoszeniowego. Każdy ruch na zewnątrz wypuszczają w jedno miejsce - na router dostawcy internetowego.
+    \end{itemize}
+    \subsection{Urządzenia do łączenia sieci}
+    \subsubsection{Regenerator}
+    Proste, analogowe urządzenie pierwszej warstwy. Jego zadanie ogranicza się do naprawy stłumionego sygnału. Wprowadza znikome opóźnienie, a znacznie wydłuża zasięg sieci.
+    \subsubsection{Koncentrator (HUB)}
+    Jest to wieloportowy regenerator. Sygnał, który dostaje wysyła wzmocniony na wszystkie porty z wyjątkiem nadawcy.
+    \begin{itemize}
+        \item Wprowadza znikome opóźnienie,
+        \item Jest podatne na kolizje
+    \end{itemize}
+    To czyni go świenym urządzeniem dla sieci o bardzo małym ruchu (rzędu 3-5\% przepustowości), na przykład w automatyce.
+    \subsubsection{Most}
+    Urządzenie warstwy pierwszej i drugiej. Posiadają bufor, dzięki czemu są "odporne" na kolizje.
+
+    Most przeźroczysty prosty działa jak koncentrator, z tą różnicą, że w przypadku kolizji ramki są buforowane.
+
+    Most uczący się natomiast wie, pod którym portem jest dane urządzenie i dzieli domenę kolizyjną.
+
+    \paragraph{Problem: sztormy, multiplikacje, pętle ramek rozgłoszeniowych}
+
+    \paragraph{Rozwiązanie: Algorytm Spanning Tree (STP) (IEEE 802.1d)}
+    \begin{enumerate}
+        \item Wybieramy korzeń drzewa - najczęściej urządzenie z najniższym adresem MAC
+        \begin{itemize}
+            \item Każdy nadaje informacje, że jest rootem
+            \item I każdy przyjmuje do świadomości informacje, że ten o najniższym adresie jest rootem
+        \end{itemize}
+        \item Każdy z węzłów blokuje porty nie będące drogą do roota
+    \end{enumerate}
+    A dlaczego nie możemy zbudować drzewa już na poziomie kabli? Możemy, ale dzięki nadmiarowym łączom zwiększamy niezawodność sieci - w przypadku awarii któregoś z łączy budujemy drzewo od nowa. Rapid STP (wprowadzony w standardzie 802.3w) pozwala na szybszą rekonstrukcję drzewa, poprzez zapamiętywanie kilku najniższych MACów.
+    \subsubsection{Przełączniki}
+    Możnaby je nazwać wielomostami. Likwidują kolizję poprzez rozdzielenie domeny kolizyjnej. W przeciwieństwie do mostów działają równolegle.
+    \begin{figure}
+        \begin{center}
+            \includegraphics[width=0.4\textwidth]{assets/bridge-vs-switch.png}
+        \end{center}
+        \caption{Porównanie działania mostu i przełącznika}
+    \end{figure}
+    \paragraph{Architektura przełącznika}
+    \begin{enumerate}
+        \item Pamięć na tablicę adresów (adres $\rightarrow$ port)
+        \item Bufor na ramki
+    \end{enumerate}
+    \subparagraph{Techniki buforowania}
+    \begin{itemize}
+        \item Buforowanie wejściowe - każdy port wejściowy ma swój bufor - ryzyko zatoru
+        \item Buforowanie wyjściowe - każdy port wyjściowy ma swój bufor - ryzyko wywłaszczenia przez pojedyńczego nadawce
+        \item Buforowanie ścieżki - osobne bufory po obydwu stronach. Drogie, nieefektywne, wprowadzające duże opóźnienie.
+    \end{itemize}
+    \subparagraph{Architektura krzyżowa} - 
+    Najstarsza z używanych architektur. Tania w implementacji, aczkolwiek blokująca się. Wymaga stosowaniu osobnych pamięci dla każdego z portu.
+    \begin{center}
+        \includegraphics[width=0.5\textwidth]{assets/cross-architecture.png}
+    \end{center}
+    \subparagraph{Architektura ze współdzieloną pamięcią}
+    \begin{itemize}
+        \item Jedna duża pamięć przechowująca wszystkie ramki,
+        \item Dostęp do pamięci może być równoległy albo szeregowy
+        \item Dla optymalnej wydajności stosuje się bardzo długą szynę - np. rzędu 1.5kB, tak by móc pobrać całą ramkę w jednym cyklu.
+    \end{itemize}
+
+    \subparagraph{Tryby pracy - jak traktować ramki broadcastowe?}
+    \begin{itemize}
+        \item \textbf{Express Switching} - zarządca decyduje, gdzie wysyłać ruch rozgłoszeniowy. Wymaga konfiguracji ze strony administratora.
+        \item \textbf{Transparent Bridging} - ruch rozgłoszeniowy leci na wszystkie porty, niekoniecznie potrzebnie zalewając sieć
+    \end{itemize}
+    \subparagraph{Metody przełączania}
+    \begin{itemize}
+        \item \textbf{Cut-Through Fast-Forward} ramka jest przesyłana do odbiorcy odrazu po odczytaniu adresu
+        \item \textbf{Store-and-Forward} ramka przed dalszym wysłaniem jest sprawdzana pod kątem poprawności
+    \end{itemize}
+    \subsubsection{Router}
+    Przełącznik dzielący domenę rozgłoszeniową.
+    \subsection{Kryteria wyboru przełączników}
+    \begin{itemize}
+        \item Wspierane standardy: IEEE 802.x, propietary standardy Cisco, \dots
+        \item Elastyczność - możliwość konfiguracji
+        \begin{itemize}
+            \item Autonegocjacja, jakie technologie wspiera?
+            \item Port mirroring - do celów diagnostycznych
+        \end{itemize}
+        \item Przepustowość całkowita. Jeśli mniejsza niż $2\times\mbox{liczba portów} \times \mbox{przepustowość portu}$ to switch będzie bottleneckiem.
+        \item Obecność i rozmiar tablicy adresów
+        \item Niezawodne zarządzanie - np. dedykowany port do \textbf{SNMP} do wykorzystania podczas gdy sieć jest zalana.
+        \item Wsparcie dla VLANów (o których w dalszej części opracowania)
+        \item Szybkość przetwarzania ramek - miara $pps$ nie określa rozmiaru pakietów.
+        \item Zasięg - czy jest możliwość wpięcia światłowodu?
+        \item Kontrolowanie przepływu ruchu
+        \begin{itemize}
+            \item Dostępność Express Switching
+            \item Możliwość limitacji przepustowości dla ruchu broadcast
+            \item Sztuczne blokowanie medium w sytuacjach krytycznych (gdy np. wiele kilientów łaczy się do jednego serwera)
+            \item MAC Address whitelisting
+        \end{itemize}
+        \item Wsparcie dla agregacji łączy
+    \end{itemize}
+    \subsection{Agregacja łączy w standardzie \textbf{IEEE 802.3ad}}
+    Wykorzystanie kilku łączy full-duplex o tej samej prędkości do realizacji jednego połączenia. Zwiększa wydajność, a także podnosi niezawodność (gdy jedno łącze ulegnie awarii, to pozostałe dalej potrzymują łączność)
+    \begin{center}
+        \includegraphics[width=0.5\textwidth]{assets/aggregation.png}
+    \end{center}
+    Z powodu problemu z kolejkowaniem ramek, nie jest możliwe aby ruch między dwoma węzłami przechodził przez kilka łączy na raz. Z tego też powodu nie zwiększy to przepustowości między dwoma konkretnymi hostami, zwiększy natomiast ogólną przepustowość sieci.
+\pagebreak
+
+\section{Wirtualne sieci lokalne \textbf{VLAN} - \textbf{IEEE 802.1Q}}
+    \textbf{VLAN}y umożliwiają tworzenie kilku sieci lokalnych z wykorzystaniem tego samego sprzętu.
+
+    \paragraph{Idea: VLAN = Domena rozgłoszeniowa}
+
+    Ogranicza to role routerów wyłacznie do realizacji połączeń między sieciami. Nie muszą już odfiltrowywać ruchu rozgłoszeniowego.
+
+    \subsection{Po co separować sieć?}
+    \begin{itemize}
+        \item bezpieczeństwo - niemożliwość podsłuchiwania ruchu poza VLANem
+        \item odseparowanie bardziej obciążonych sieci od reszty
+        \item Rozgłoszenia w mniejszym stopniu zalewają sieć
+    \end{itemize}
+    \subsection{Określenie przynależności do VLANa}
+    \begin{itemize}
+        \item Grupowanie portów (segment wirtualny)
+        \begin{itemize}
+            \item Działa w warstwie pierwszej, nie wprowadza opóźnienia
+            \item Uniemożliwia przypisanie jednej stacji do kilku VLANów
+        \end{itemize}
+        \item grupowanie adresów (podsieć wirtualna)
+        \begin{itemize}
+            \item MAC (warstwa druga)
+            \item IP (warstwa trzecia)
+        \end{itemize}
+        \item grupy multicastowe
+        \item reguły logiczne
+    \end{itemize}
+    \subsection{Przesył informacji o przynależności do VLANa między przełącznikami}
+    W tej kwestii przełączniki różnych firm są często niekompatybilne ze sobą.
+    \begin{itemize}
+        \item Przesyłanie tabel (informacji o VLANach) między przełącznikami. Problematyczne - tabele mogą być duże, jak często trzeba je aktualizować?
+        \item Oznaczanie ramek - \textbf{IEEE 802.1Q}
+        \begin{itemize}
+            \item Dodatkowe 4-bajtowe pole w ramce Ethernetowej (Zmniejsza minimalny rozmiar danych do 42 bajtów)
+            \item W tym polu 12-bitów na numer VLANa i 3 na ustalenie priorytetu (QoS)
+            \item Maksymalny rozmiar ramki wzrasta do 1518 bajtów - starsze urządzenia mogą taką odrzucać z automatu
+            \item Maksymalnie 4094 VLANy - w specyficznych przypadkach zbyt mało - np. w kompleksie hotelowym, gdzie chcemy odseparować każdy z pokoi
+        \end{itemize}
+    \end{itemize}
+    \subsection{Klasyfikacja VLANów}
+    \begin{center}
+    \begin{tabular}{c@{\hspace{2cm}}c}
+    \begin{minipage}[t]{0.4\textwidth}
+        \begin{center}
+        Liczba przełączników
+        \end{center}
+        \begin{itemize}
+            \item wewnętrzny - w obrębie jednego przełącznika
+            \item zewnętrzny - w obrębie kilku przełączników
+        \end{itemize}
+    \end{minipage}
+    &
+    \begin{minipage}[t]{0.4\textwidth}
+        \begin{center}
+        Świadomość użytkownika
+        \end{center}
+        \begin{itemize}
+            \item ukryty - użytkownik nie wie, że jest w VLANie
+            \item jawny
+        \end{itemize}
+    \end{minipage}
+    \end{tabular}
+    \end{center}
+\pagebreak
+\section{IPv4}
+    \subsection{Cechy IP jako protokołu warstwy 3}
+    \begin{itemize}
+        \item Niezależne od technologii warstw niższych (internet działa tak samo, niezależnie czy używamy Wi-Fi czy Ethernetu)
+        \item Zasięg światowy
+        \item Potwierdzenia End-to-End
+        \item Zaimplementowane typowe aplikacje - Poczta, Transfer plików
+    \end{itemize}
+    \subsection{Nagłówek IPv4}
+    \begin{figure}
+        \begin{center}
+            \includegraphics[width=0.7\textwidth]{assets/ipv4-header.png}
+        \end{center}
+        \caption{Struktura nagłówka IPv4}
+    \end{figure}
+    \begin{itemize}
+        \item Wersja protokołu - aż 4 bity, a funkcjonują tylko dwie wersje
+        \item ID datagramu - wraz z adresem nadawcy w założeniu tworzy indywidualny w skali internetu identyfikator. W praktyce pole to może być za małe - w tranmisjach multimedialnych.
+        \item TTL - dekrementowany co hop o nieokreśloną wartość
+        \item Suma kontrolna samego nagłówka
+        \begin{itemize}
+            \item Przy obecnym BER szansa uszkodzenia nagłówka znikoma
+            \item Co hop musi być rekalkulowana (duże opóźnienia)
+            \item Obecnie zbędna, bo wszechobecny Ethernet i tak dodatkowo liczy sumy kontrolne
+        \end{itemize}
+        \item Adresy - są za krótkie, by jednoznacznie zidentyifkować wszystkie hosty w internecie
+        \item Istnieje opcjonalne, 4 bajtowe pole które nie jest nigdzie wykorzystywane
+        \item Fragmentacja
+        \begin{itemize}
+            \item Pole znaczników
+            \begin{itemize}
+                \item "Zarezerwowany" bit - zawsze ustawiony na 0
+                \item \textbf{DF} (Don't Fragment) - zakaz fragmentacji
+                \item \textbf{MF} (More Fragments) - ustawiany na 0 tylko dla ostatniego fragmentu
+            \end{itemize}
+            \item Zwiększa zawodności sieci
+            \item Zwiększa ilość wysyłanych informacji, bo nagłówki trzeba wysyłać wielokrotnie
+            \item Zwiększa koszt operacji routingu
+            \item Służy do łączenia sieci o różnych MTU (np. przesłanie 2kB ramki z Wi-Fi do Ethernetu)
+        \end{itemize}
+    \end{itemize}
+\pagebreak
+\section{Aplikacje sieci TCP/IP}
+    \subsection{Domain Name Service (DNS)}
+    Umożliwia wykorzystywanie nazw domenowych (łatwych do zapamiętania dla człowieka) zamiast surowych adresów IP.
+
+    \subsubsection{Domeny}
+    Jest to drzewiasta struktura, gdzie korzeniem zarządza \textbf{ICANN}. To ta instytucja rejestruje domeny najwyższego poziomu (z ang. Top-Level Domain (\textbf{TLD}))
+
+    \paragraph{Domeny najwyższego poziomu}
+    \begin{itemize}
+        \item gTLD - general np. .com, .net ($\ge$3 znaki) - zarządzane najczęściej przez jakieś firmy
+        \item ccTLD - krajowe np. .pl, .de, .tv (2 znaki) - zarządzane przez instytucje rządowe - w Polsce NASK
+    \end{itemize}
+    Każda domena musi posiadać co najmniej 2 serwery DNS, po to by w razie awarii jednego z nich drugi mógł przejąć zadanie.
+    \subsubsection{Główne serwery DNS \{a-m\}.root-servers.org}
+    Ograniczono liczbę głównych serwerów do 13 - bo informacje o większej ilości serwerów nie zmieściłyby się w jednym pakiecie UDP.
+
+    W praktyce na jeden adres IP przypada kilkaset serwerów DNS - wykorzystuje się anycast.
+
+    \subsubsection{Sposoby kierowania zapytań do DNS}
+    \begin{itemize}
+        \item Rekurencja - Serwer DNS pyta inne serwery w imieniu klienta
+        \item Iteracja - klient bezpośrednio odpytuje serwery DNS
+    \end{itemize}
+    \begin{center}
+        \includegraphics[width=0.4\textwidth]{assets/dns-iteration-recurse.png}
+    \end{center}
+    \subsubsection{Odpowiedzi od DNS}
+    \begin{itemize}
+        \item Autorytatywne - pochodzące od serwera zarządzającego domeną, o którą jest pytany. Stąd, zawsze jest aktualna
+        \item Nieautorytatywne - pochodzące z zewnątrz, buforowane na serwerze przez jakiś czas
+    \end{itemize}
+
+    \subsubsection{Rekordy DNS}
+    \begin{itemize}
+        \item \textbf{SOA} (Start of Authority) - podstawowe informacje nt. domeny
+        \item \textbf{NS} (Name Server) - serwer DNS obsługujący domenę
+        \item \textbf{A} (Address) - po prostu adres IPv4 (lub \textbf{AAAA} dla IPv6)
+        \item \textbf{CNAME} (Cannonical Name) - wskazanie na inną nazwę
+        \item \textbf{MX} (Mail Exchange) - Serwer pocztowy obsługujący domenę
+        \item \textbf{HINFO} - Informacje o sprzęcie obsługującym domenę
+    \end{itemize}
+
+    \subsection{Poczta E-Mail (protokoły SMTP i IMAP/POP)}
+    \begin{figure}
+        \begin{center}
+            \includegraphics[width=0.8\textwidth]{assets/mail.png}
+        \end{center}
+    \end{figure}
+    \section{W jaki sposób komputery rozmawiają ze sobą?}
+    Załóżmy, że chcemy wysłać wiadomość o treści "kielnia" do innego komputera.
+    Na pozór proste - kilka linijek w Pythonie. Ale co się dzieje pod spodem?
+    \subsection{Warstwa aplikacji}
+    Mamy nasz komputer, któremu każemy wysłać wiadomość do drugiego komputera.
+    \subsection{Warstwa transportowa}
+    Komputer w pierwszej kolejności tworzy opakowuje dane do pakietu warstwy transportowej. 
+\end{document}
