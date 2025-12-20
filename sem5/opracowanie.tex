@@ -1,0 +1,447 @@
+\documentclass{article}
+\usepackage[margin=2cm]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage{float}
+\usepackage{polski}
+\usepackage{listings}
+\usepackage{graphicx}
+
+\title{Opracowanie ASK}
+\author{Emilian Zawrotny}
+
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+\section{Zarządzanie użytkownikami w Linuxie}
+  \subsection{/etc/passwd}
+    \begin{lstlisting}
+      kielnia:x:1001:1001::/home/kielnia:/bin/bash
+    \end{lstlisting}
+    W tym pliku przechowywane są atrybuty użytkownika, takie jak:
+    \begin{enumerate}
+      \item nazwa użytkownika (kielnia)
+      \item hasło (obecnie zazwyczaj x lub *, a hash przechowywany w /etc/shadow)
+      \item uid (1001) - ID użytkownika
+      \item gid (1001) - ID domyślnej grupy
+      \item Ścieżka folderu domowego (/home/kielnia)
+      \item domyślna powłoka (/bin/bash)
+    \end{enumerate}
+  \subsection{Tworzenie nowego użytkownika}
+    \begin{lstlisting}
+      useradd -m username # -m oznacza utworzenie katalogu domowego
+      passwd username     # ustawienie hasła dla użytkownika
+    \end{lstlisting}
+  \subsection{Grupy}
+    Informacje o grupach przechowywane są w pliku \textbf{/etc/group}. We współczesnych systemach każdy użytkownik ma swoją własną grupę, nazwaną tak samo jak użytkownik.
+    Użytkownik może natomiast należeć do kilku grup - powszechnie np. nasz użytkownik należy do grupy \textbf{sudo} lub \textbf{wheel} - co umożliwia mu korzystanie z sudo.
+    \subsubsection{Dodawanie użytkownika do grupy}
+      \begin{lstlisting}
+        usermod -aG groupname username
+      \end{lstlisting}
+  \subsection{Jak zablokować użytkownika w Linuxie?}
+    \begin{enumerate}
+      \item \textbf{usermod -L -e 1 username}
+      \item "Zepuscie" hasła poprzez wpisane czegos do hasha w \textbf{/etc/shadow}
+      \item Ustawienie domyślnej powłoki na np. \textbf{/dev/null}
+    \end{enumerate}
+
+  \subsection{Wymuszanie polityki haseł w Linuxie}
+    Domyślnie użytkownik w Linuxie może mieć dowolne hasło. Do jego zmiany nie jest nawet
+    potrzebne podanie obecnego hasła. Żeby to zmienić, możemy użyć biblioteki
+    \textbf{pam\_cracklib}. W pliku konfiguracyjnym możemy wymusić wtedy np:
+    \begin{enumerate}
+      \item minimalną długość hasła (\textbf{minlen=N}), 
+      \item ilość różnych znaków względem poprzedniego hasła (\textbf{difok=N}) 
+      \item liczbę zapytań o hasło przed odrzuceniem logowania (\textbf{retry=N})
+    \end{enumerate}
+  \section{Powłoka w systemie Linux}
+    Najczęściej używaną powłoką w systemach Linux jest \textbf{bash}.
+    \subsection{Pliki powiązane z powłoką bash}
+      \begin{enumerate}
+        \item \textbf{/etc/bashrc} - globalne ustawienia basha
+        \item \textbf{$\sim$/.bashrc}  - lokalne ustawienia powłoki non-login
+        \item \textbf{$\sim$/.profile} - lokalne ustawienia powłoki z logowaniem
+        \item \textbf{$\sim$/.bash\_history} - ostatnie wydawane polecenia
+      \end{enumerate}
+    \subsubsection{Obsługa tych plików przez powłokę}
+    Gdy uruchamiamy konsolę, wykonywany jest jeden z tych skryptów:
+      \begin{enumerate}
+        \item Jeśli logujemy się (np. w tty lub po ssh) - \textbf{$\sim$/.profile}
+        \item Jeśli uruchamiamy powłokę będąc już zalogowanym (np. uruchamiamy emulator terminala w sesji X) - \textbf{$\sim$/.bashrc}
+      \end{enumerate}
+    Oczywiście te pliki mogą includować pozostałe pliki:
+    \begin{lstlisting}
+      if [ -f /etc/bashrc]; then
+          ./etc/bashrc
+      fi
+    \end{lstlisting}
+  \section{Usługi katalogowe}
+    \subsection{Motywacja}
+      Specjalistyczna "baza danych", stworzona do przechwywania i przeglądania informacji nt. użytkowników, komputerów, urządzeń i innych zasobów sieciowych.
+      Prostrza od general-purpose kolosów typu SQL.
+    \newpage
+    \subsection{Przykładowa struktura}
+      Każdy byt jest zbiorem atrybutów, np:
+      \begin{itemize}
+        \item Kraj (c)
+        \item Stan (st)
+        \item Organizacja (o)
+        \item Jednostka organizacyjna (on)
+        \item Nazwa zwyczajowa (cn)
+      \end{itemize}
+      \begin{figure}[H]
+        \centering
+        \includegraphics[width=0.5\textwidth]{image.png}
+      \end{figure}
+      Każdy byt jest identyfikowany przez unikalną nazwę (Distringuished Name/DN):
+      
+      cn=Barbara Jensen,ou=Sales,o=Acme,st=California,c=US
+    \subsection{LDAP - Lightweight Directory Access Protocol}
+    Popularna usługa katalogowa, zdefiniowana przez RFC 2251. Stanowi podstawę dla Microsoftowskiego Active Directory.
+  \section{Konfiguracja sieci}
+      \subsection{Predictable Network Interface Name}
+        Z pewnością kurwa przewidzę, że mój jedyny interfejs w komputerze zamiast nazywać się \textbf{eth0}, nazywa się \textbf{enp69s21f37}.
+        Jednak schemat tych nazw jest następujący: en(p)[pcibus]s[slot]f[function]. Przykłady
+        \begin{itemize}
+          \item enp16s0f0
+            \begin{itemize}
+              \item en - Ethernet
+              \item p16 - Urządzenie PCI, numer szyny=16
+              \item s0 - Pierwszy port w karcie
+              \item f0 - pierwszy interfejs na tym porcie
+            \end{itemize}
+        \end{itemize}
+      \subsection{iproute2}
+      \begin{itemize}
+        \item ip addr show eth0 - wyświetla adresy IP należace do interfejsu eth0
+        \item ip addr add 192.168.0.20 dev eth0 - dodaje adres 192.168.0.20 do interfejsu eth0
+        \item ip route add default 192.168.0.1 dev eth0 - ustawia 192.168.0.1 jako bramę domyślną dla interfejsu eth0
+        \item ip addr flush dev eth0
+      \end{itemize}
+      \subsection{DNS}
+        System operacyjny posługuje się dwoma mechanizmami do translacji nazw domenowych na adresy IP
+        \begin{itemize}
+          \item Wpisy w pliku \textbf{/etc/hosts}
+          \item Zewnętrzny serwer DNS, jego adres wskazuje plik \textbf{/etc/resolv.conf}
+        \end{itemize}
+        Użytkownik może samemu zarządać translacji nazwy na adres korzystając z polecenia \textbf{dig} lub \textbf{nslookup}
+    
+  \section{SSH}
+    \subsection{Tunelowanie SSH}
+      \begin{lstlisting}
+        ssh -L 1234:localhost:80 username@hostname
+      \end{lstlisting}
+      Powyższe polecenie tworzy tunel SSH, wszystkie połączenia z localhost:1234 zostaną przetunelowane na hostname:80.
+    \subsection{Kopiowanie plików po ssh}
+      \subsubsection{SCP}
+        \begin{lstlisting}
+          scp [[user@]host1:]file1 ... [[user@]host2:]file12
+        \end{lstlisting}
+      \subsubsection{rsync}
+        \begin{lstlisting}
+          rsync -a --delete -e ssh root@server.example.com:/home
+            /mnt/server-mirror/home
+        \end{lstlisting}
+        \begin{itemize}
+          \item \textbf{-a --archive} - odpowiednik -rlptogD, używamy jeśli chcemy działać rekursywnie i zachować prawie wszystko.
+          \item \textbf{--delete} - usuwa nadmiarowe pliki z dest-dir (tzn. te, ktorych nie bylo w source)
+          \item \textbf{-e} - wskazuje na zdalną powłokę, możemy oczywiście doprecyzować argumenty do ssh np. \textbf{-e "ssh -i ~/.sshkey" root@server.example.com}
+        \end{itemize}
+  \section{Konfiguracja NTP w Linuxie}
+    \begin{figure}[H]
+      \begin{lstlisting}
+        [Time]
+        NTP=ntp.task.gda.pl
+        FallbackNTP=0.fedora.pool.ntp.org
+      \end{lstlisting}
+      \caption{Zawartość pliku /etc/systemd/timesyncd.conf}
+    \end{figure}
+    Sprawdzenie poprawności ustawień: \textbf{timedatectl timesync-status}
+  \section{Firewall w Linuxie}
+    \subsection{iptables}
+    \subsubsection{Kategorie filtrowanego ruchu}
+      \begin{itemize}
+        \item INPUT - ruch przychodzący
+        \item OUTPUT - ruch wychodzący
+        \item FORWARD - ruch przekierowywany
+      \end{itemize}
+    \subsubsection{Reguły}
+      \begin{itemize}
+        \item ACCEPT - akceptujemy ruch
+        \item REJECT - odrzucamy, w logach pojawia się informacja
+        \item DROP - odrzucamy, nie logujemy tego
+      \end{itemize}
+    \subsubsection{Przykładowa konfiguracja}
+      \begin{lstlisting}
+# eth0 - zewnętrzny interfejs
+# eth1 - wewnętrzny interfejs
+# 88.88.88.88 - zewnętrzny adres IP
+# 192.168.0.54/24 - wewnętrzny adres IP
+# Mamy serwer HTTP na porcie 80
+# FTP na porcie 21 który ma być dostępny pod adresem routera na porcie 65333.
+
+# by default we block all incoming traffic
+iptables -P FORWARD DROP
+iptables -P INPUT DROP
+iptables -P OUTPUT ACCEPT
+
+#NAT
+echo "1" > /proc/sys/net/ipv4/ip_forward
+iptables -A FORWARD -i eth1 -o eth0 -s 192.168.0.0/255.255.255.0 -d 0/0 -j ACCEPT
+iptables -A FORWARD -i eth0 -o eth1 -s 0/0 -d 192.168.0.0/255.255.255.0 -j ACCEPT
+iptables -t nat -A POSTROUTING -s 192.168.0.0/255.255.255.0 -d 0/0 -j MASQUERADE
+
+# always accept local connections
+iptables -A INPUT -i lo -j ACCEPT
+
+# block connections from the network claiming that they origin from our computer
+iptables -A INPUT -i eth0 -s 88.88.88.88 -j DROP
+
+# accept connections that are answers to our requests
+iptables -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
+
+# accept connections on certain ports
+iptables -A INPUT -i eth0 -p tcp -m state --state NEW -d 192.168.0.54 --dport 21 -j ACCEPT
+iptables -A INPUT -p tcp -m state --state NEW -m tcp --dport 80 -j ACCEPT
+
+# forward connections to their destination
+iptables -A PREROUTING -t nat -i eth0 -p tcp -d 88.88.88.88 --dport 65333 -j DNAT --to-
+destination 192.168.0.54:21
+iptables -A PREROUTING -t nat -i eth1 -p tcp -d 88.88.88.88 --dport 65333 -j DNAT --to-
+destination 192.168.0.54:21
+\end{lstlisting}
+    \subsection{firewalld}
+      Firewalld rozróżnia dwie konfiguracje: runtime i permanent. To sprawia, że możemy najpierw przetestować, czy nasze ustawienia działają, a potem zapisać je jako trwałe.
+      \subsubsection{Podstawowe polecenia}
+        \begin{lstlisting}
+# Sprawdzenie domyśnego zone'a
+firewall-cmd --get-default-zone
+# Otworzenie portu
+firewall-cmd --add-port 80/tcp --zone=public [--permanent]
+# Reload configu (permanent)
+firewall-cmd --reload
+# Zamknięcie portu
+firewall-cmd --remove-port=80/tcp --zone=public [--permanent]
+# Sprawdzenie czy port jest otwarty
+firewall-cmd --list-port | grep 80/tcp
+# Zapisanie runtime configu do permanent
+firewall-cmd --runtime-to-permanent
+        \end{lstlisting}
+    \subsection{UFW - Uncomplicated Firewall}
+        UFW to wrapper na iptables, służący do ułatwienia zarządzania.
+        \begin{lstlisting}
+# Otwarcie portu
+ufw allow 22/tcp
+# Domyslne reguły
+ufw default deny incoming && ufw default allow outgoing
+# Wyswietlenie reguł i ich usuwanie
+ufw status numbered && ufw delete 2
+        \end{lstlisting}
+\section{Konfiguracja DHCPCD}
+  \begin{figure}[H]
+    \begin{lstlisting}
+ddns-update-style ad-hoc|interim;
+# subnet section
+subnet 192.168.0.0 netmask 255.255.255.0 {
+# default gateway
+option routers 192.168.0.1;
+# network mask
+option subnet-mask 255.255.255.0;
+# domain name (FQDN)
+option domain-name "domain.org";
+# DNS server addresses (coma separated)
+option domain-name-servers 192.168.1.1,IP2;
+# IP range
+range 192.168.0.128 192.168.0.255;
+# default lease time (in seconds)
+default-lease-time 21600;
+# max leas time (in seconds)
+max-lease-time 43200;
+# Przypisanie statycznego adresu IP dla hosta
+host kielnia {
+hardware ethernet 12:34:56:78:AB:CD;
+fixed-address 192.168.0.20;
+}
+}
+    \end{lstlisting}
+  \end{figure}
+\section{DNS}
+  \subsection{Typy zapytań}
+    \begin{itemize}
+      \item \textbf{Rekurencyjny} - klient wysyła zapytanie do najbliższego DNSa, ten jest odpowiedzialny za znalezienie adresu IP lub zwrócenie błędu
+      \item \textbf{Iteracyjny} - jeśli serwer nie zna adresu, to wysyła adres IP następnego w hierarchii serwera i klient pyta go
+    \end{itemize}
+  \subsection{Typy odpowiedzi}
+    \begin{itemize}
+      \item Autorytatywna - gdy domena jest zarządzana przez serwer dający odpowiedź
+      \item Nieautorytatywna - w przeciwnym wypadku
+    \end{itemize}
+  \subsection{Działanie}
+    \begin{figure}[H]
+      \centering
+      \includegraphics[width=0.75\textwidth]{image2.png}
+    \end{figure}
+    Jak widać, zapytanie klienta do lokalnego serwera jest rekursywne, natomiast zapytania od lokalnego serwera są już iteracyjne.
+  \subsection{Typy rekordów}
+    \begin{itemize}
+      \item \textbf{A} (Address)- wskazuje na adres IPv4
+      \item \textbf{AAAA} - wskazuje na adres IPv6
+      \item \textbf{CNAME} (Cannonical Name) - wskazanie na inną nazwę (np. www.example.org $\rightarrow$ example.org)
+      \item \textbf{MX} (Mail Exchange) - Serwer pocztowy obsługujący domenę
+      \item \textbf{PTR} (Pointer) - służy do Reverse DNS (tj. odkrycie nazwy domenowej na podstawie adresu IP)
+      \item \textbf{SOA} (Start of Authority) - wskazuje na serwer dający Autorytatywne odpowiedzi odnośnie domeny
+      \item \textbf{TXT} (Text) - komentarz do rekordu
+      \item \textbf{SRV} (Service) - wskazuje na serwer świadczący określoną usługę
+    \end{itemize}
+  \subsection{Porty}
+    \begin{itemize}
+      \item Komunikacja Klient-Serwer: 53/udp
+      \item Komunikacja Serwer-Serwer: 53/tcp
+    \end{itemize}
+  \subsection{Strefy}
+    \begin{itemize}
+      \item Primary zone - przechowuje read-write kopie rekordów
+      \item Secondary zone - read-only kopia, zapewnia redundancje i load balancing
+      \item Stub zone - nie zawiera wpisów, jedynie przekazuje zapytania do serwerów primary/secondary, może cache'ować odpowiedzi
+    \end{itemize}
+    \subsubsection{Transfer między strefami}
+      Do przesyłu \textbf{primary} $\rightarrow$ \textbf{secondary} służą protokoły:
+      \begin{itemize}
+        \item \textbf{AXFR} - przenosi wszystkie znane rekordy
+        \item \textbf{IXFR} - przenosi jedynie różnice, efektywne gdy różnic jest mało
+      \end{itemize}
+  \section{Serwery WWW}
+      \subsection{Apache2}
+        \subsubsection{Foldery konfiguracyjne}
+          \begin{itemize}
+            \item \textbf{/etc/apache2|httpd/} - foldery z plikami konfiguracyjnymi
+            \item \textbf{/var/www} - domyślny folder z serwowanymi plikami
+            \item \textbf{/var/log/{apache2|httpd}/} - logi
+          \end{itemize}
+        \subsubsection{Główne dyrektywy konfiguracyjne}
+          \begin{itemize}
+            \item \textbf{ServerRoot} "/etc/httpd" - główny folder konfiguracyjny
+            \item \textbf{Listen} 80 - port na którym Apache ma nasłuchiwać
+            \item \textbf{User} apache - użytkownik na którym działa serwer
+            \item \textbf{Group} apache - grupa na ktorej dziala serwer
+            \item \textbf{ServerName} kielnia - nazwa zwracana przez Apacha przy błędach itp.
+            \item \textbf{DocumentRoot} /var/www/html - katalog z hostowanymi stronami
+            \item \textbf{UserDir} public\_html - z rozszerzenia \textbf{mod\_userdir}, \textbf{example.com/$\sim$obrotowy/index.html} $\rightarrow$ \textbf{/home/obrotowy/public\_html/index.html}.
+            \item \textbf{DirectoryIndex} index.html index.cgi index.htm - w jakiej kolejności ma szukać index file.
+            \item \textbf{<Directory /name>...</Directory>} - konfiguracja per fizyczny katalog w DocumentRoot
+            \item \textbf{<Location /name>...</Location>} - konfiguracja per logiczne URLe
+            \item \textbf{AllowOverride} - jakie dyrektywy może nadpisywać \textbf{.htaccess}
+          \end{itemize}
+        \subsubsection{Podstawowa autoryzacja użytkowników}
+          \begin{itemize}
+            \item Dodanie pierwszego użytkownika (i utworzenie pliku) \textbf{htpasswd -c <sciezka\_do\_pliku> <username}.
+            \item Dodanie kolejnego użytkownika: \textbf{htpasswd <sciezka\_do\_pliku> <username>}
+            \item Konfiguracja apacha: \begin{lstlisting}
+    <Location /kielnia>
+        AuthType Basic
+        AuthName "kielnia"     # nazwa okienka logowania
+        AuthUserFile <sciezka> # Ściezka do pliku z uzytnikami
+        Require valid-user     # Zezwalaj na dostep wszystkim zalogowanym uzytkownikom
+        Require user kielnia   # Zezwalaj tylko uzytnikowi kielnia
+        Require group klika    # Zezwalaj tylko grupie klika
+        Require ip 192.168.0.0/24 # Zezwalaj na dostęp wyłącznie z lokalnej sieci
+    </Location>
+            \end{lstlisting}
+            \item Konfiguracja na poziomie pliku z użytkownikami:
+              \begin{lstlisting}
+[groups]
+  group1 = user1,user2
+  group2 = user3,user4
+[folder1:/]
+  @group1 = rw
+  @group2 =
+[folder2:/]
+  user1 =
+              \end{lstlisting}
+        \end{itemize}
+      \subsubsection{Wirtualne hosty}
+        Wirtualne hosty umożliwiają hostowanie wielu stron na różnych domenach, z wykorzystaniem jednego fizycznego serwera.
+        \begin{lstlisting}
+<VirtualHost 123.45.67.89>
+    ServerName www.server1.gda.pl
+    DocumentRoot /var/www/server1_data
+    ...
+</VirtualHost>
+
+<VirtualHost 123.45.67.89>
+    ServerName www.server2.gda.pl
+    DocumentRoot /var/www/server2_data
+    ...
+</VirtualHost>
+
+        \end{lstlisting}
+      \subsubsection{Server Name Indication (SNI)}
+        Jeśli chcielibysmy używać innych certyfikatów dla wszystkich wirtualnych hostów, to dostawalibyśmy warningi odnośnie certifcate mismatch.
+        Dzieje się tak dlatego, bo serwer musi wybrać certyfikat nie wiedząc, do jakiego hosta odwołuje się klient. Przeglądarki wspierające SNI dodają informacje nt. nazwy hosta do pakietu HTTPS, dzięki czemu serwer wie którego certyfikatu musi użyć.
+    \subsection{Nginx}
+      \textbf{Nginx} jest popularną alternatywą dla Apache2. Charakteryzuje się lekkością i szybkością działania, lecz uproszczoną funkcjonalnością.
+      \subsubsection{Konfiguracja wirtualnych hostów w Nginx}
+        Wirtualne hosty konfigurujemy poprzez wielokrotnienie bloków \textbf{Server\{\}} w pliku konfiguracyjnym (\textbf{/etc/nginx/nginx.conf}).
+        \begin{lstlisting}
+server {
+    listen 80;
+    server_name doaminname domainalias1 ….;
+    access_log /path/to/access.log;
+    error_log /path/to/access.log;
+    root /path/to/root/folder;
+    index index.html index.htm;
+}
+        \end{lstlisting}
+  \section{Proxy}
+    Proxy to pośrednik między klientem a internetem. Może modyfikować zarówno zapytania użytkownika jak i odpowiedzi na nie. Używane po stronie użytkownika.
+    \begin{figure}[H]
+      \centering
+      \includegraphics[width=0.75\textwidth]{image3.png}
+    \end{figure}
+    \subsection{Zastosowania Proxy}
+      \begin{itemize}
+        \item Filtrowanie ruchu (np. w sieciach korporacyjnych)
+        \item Debugowanie aplikacji lub testy penetracyjne (np. Burp Suite)
+        \item Ukrycie rzeczywistego adresu IP
+      \end{itemize}
+    \subsection{Reverse Proxy}
+      Proxy działające po stronie serwera. Jeden serwer dostępny publicznie, który przekierowuje ruch do serwerów w wewnętrznej sieci.
+      Zastosowania:
+      \begin{itemize}
+        \item Load balancing
+        \item Zabezpieczenie serwera przed atakami
+      \end{itemize}
+  \section{Load balancing}
+    \subsection{Metody load-balancingu}
+      \begin{itemize}
+        \item Load-balancing w warstwie 4 - np. w zależności od źródłowego adresu IP
+        \item Load-balancing w warstiwe 7 - np. w zależności od żądanej treści
+      \end{itemize}
+    \subsection{Algorytmy load-balancingu}
+      \begin{itemize}
+        \item Round-robin - ruch leci do kolejnych serwerów. Domyślny algorytm.
+        \item Leastconn - Wybiera serwer obsługujący najmniejszą ilość połączeń. Gdy kilka serwerów obsługuje tyle samo połączeń to rotuje między nimi wedle Round-robin
+        \item Source - wybiera adres IP w zależności od źródłowego adresu IP
+      \end{itemize}
+  \section{Poczta elektroniczna}
+    \subsection{Podstawowe pojęcia}
+      \begin{itemize}
+        \item \textbf{Mail User Agent (MUA)} - Klient pocztowy np. Thunderbird, Outlook
+        \item \textbf{Mail Transfer Agent (MTA)} - Serwer odpowiadający za przesył maili między serwerami np. sendmail, postfix, exim
+        \item \textbf{Mail Delivery Agent (MDA)} - Serwer odpowiadający za przesył maili do klientów końcowych np. Devcot, Procmail, Spamassasin
+      \end{itemize}
+    \subsection{Protokoły komunikacji MUA $\leftrightarrow$ MDA}
+      \begin{itemize}
+        \item \textbf{POP3} (Post Office Protocol) - pobiera maile z serwera (tym samym usuwając je z niego)
+        \item \textbf{IMAP} (Internet Message Access Protocol) - umożliwia dostęp do wiadomości tak, jakby były przechowywane lokalnie. Pobranie wiadomości nie usuwa jej z serwera.
+      \end{itemize}
+    \subsection{Relaying}
+      \textbf{Relaying} - proces przenoszenia maili między dwoma serwerami pocztowymi. Dzięki temu odbiorca wiadomości nie musi być online, żeby można było mu wysłać maila.
+      \subsubsection{Zabezpieczenie przed spamem}
+        \begin{itemize}
+          \item Odbiorca i nadawca powinni być zweryfikowani (receiver\_verify; sender\_verify; w exim)
+          \item Można blokować relaying z poszczególnych adresów IP (host\_accept\_relay=123.45.67.89:123.45.67.90)
+          \item Realtime blackhole list (rbl\_domains = rbl.maps.vix.com:dul.maps.vix.com)
+        \end{itemize}
+\end{document}
