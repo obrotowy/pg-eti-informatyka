@@ -17,8 +17,8 @@ b = 3D805252h**
 
 ## 2.
 Dla podanych liczb a i b wyznac $a \cdot\ b$: \
-**a = 4140000h\
-b = 44B0000h**
+**a = 41400000h\
+b = 44B00000h**
 
 # Rozwiązania
 ## Rozwiązanie przykład 1
@@ -41,4 +41,4 @@ $a \cdot b = (1.10)_2 \cdot 2^3 \cdot (1.011)_2 \cdot 2^{10} = (1.10 \cdot 1.011
 
 1.5 * 1.375 polecam zrobić poprzez mnożenie pisemne, można też uskuteczniac mnożenie pisemne binarnie
 
-$(1.10001)_2 \cdot 2^{14}$ = 0 10001101 00001... = **46840000h**
+$(1.00001)_2 \cdot 2^{14}$ = 0 10001101 00001... = **46840000h**
